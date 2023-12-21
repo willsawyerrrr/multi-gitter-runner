@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "module": "NodeNext",
+        "outDir": "dist",
+        "strict": true,
+        "target": "ES6"
+    },
+    "include": ["infrastructure", "src"]
+}
