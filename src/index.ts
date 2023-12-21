@@ -8,29 +8,42 @@ const app = new App({
     webhooks: { secret: process.env.WEBHOOK_SECRET! },
 });
 
-app.webhooks.on("pull_request", ping);
+app.webhooks.on("pull_request.closed", run);
+app.webhooks.on(
+    ["pull_request.opened", "pull_request.reopened", "pull_request.synchronize"],
+    verify
+);
 
 export async function handler(event: APIGatewayEvent): Promise<APIGatewayProxyResult> {
-    const payload = JSON.parse(event.body!);
     await app.webhooks.receive({
-        payload,
+        payload: JSON.parse(event.body!),
         id: event.requestContext.requestId,
         name: "pull_request",
     });
 
-    return {
-        statusCode: 200,
-        body: JSON.stringify({
-            message: `Received ${payload.action} event for pull request ${payload.number}`,
-        }),
-    };
+    return { statusCode: 200, body: JSON.stringify({ message: `success` }) };
 }
 
-async function ping({ payload }: EmitterWebhookEvent<"pull_request">) {
+async function run({ payload }: EmitterWebhookEvent<"pull_request">) {
+    const octokit = await app.getInstallationOctokit(payload.installation!.id);
+
+    const message = payload.pull_request.merged
+        ? "Running `multi-gitter`..."
+        : "Pull request was closed without merging.";
+
+    await octokit.rest.issues.createComment({
+        body: message,
+        issue_number: payload.pull_request.number,
+        owner: payload.repository.owner.login,
+        repo: payload.repository.name,
+    });
+}
+
+async function verify({ payload }: EmitterWebhookEvent<"pull_request">) {
     const octokit = await app.getInstallationOctokit(payload.installation!.id);
 
     await octokit.rest.issues.createComment({
-        body: `Received ${payload.action} event for pull request ${payload.number}`,
+        body: "Verifying pull request contents...",
         issue_number: payload.pull_request.number,
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
