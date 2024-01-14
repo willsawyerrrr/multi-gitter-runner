@@ -10,7 +10,13 @@ const app = new App({
 
 app.webhooks.on("pull_request.closed", run);
 app.webhooks.on(
-    ["pull_request.opened", "pull_request.reopened", "pull_request.synchronize"],
+    [
+        "pull_request.edited",
+        "pull_request.opened",
+        "pull_request.ready_for_review",
+        "pull_request.reopened",
+        "pull_request.synchronize",
+    ],
     verify
 );
 
