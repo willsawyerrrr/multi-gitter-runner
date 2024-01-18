@@ -33,25 +33,60 @@ export async function handler(event: APIGatewayEvent): Promise<APIGatewayProxyRe
 async function run({ payload }: EmitterWebhookEvent<"pull_request">) {
     const octokit = await app.getInstallationOctokit(payload.installation!.id);
 
-    const message = payload.pull_request.merged
-        ? "Running `multi-gitter`..."
-        : "Pull request was closed without merging.";
+    if (!payload.pull_request.merged) {
+        await octokit.rest.issues.createComment({
+            body: "Pull request was closed without merging.",
+            issue_number: payload.pull_request.number,
+            owner: payload.repository.owner.login,
+            repo: payload.repository.name,
+        });
 
-    await octokit.rest.issues.createComment({
-        body: message,
+        return;
+    }
+
+    const { data, status } = await octokit.rest.issues.createComment({
+        body: "Running `multi-gitter`...",
         issue_number: payload.pull_request.number,
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
     });
+
+    if (!(status >= 200 && status < 300)) {
+        return;
+    }
+
+    await octokit.rest.issues.updateComment({
+        body: "Done running `multi-gitter`.",
+        issue_number: payload.pull_request.number,
+        owner: payload.repository.owner.login,
+        repo: payload.repository.name,
+        comment_id: data.id,
+    });
+
+    // check verification status
+    // ideally, validate and use the previous verification status
+    // otherwise, re-verify the pull request contents
 }
 
 async function verify({ payload }: EmitterWebhookEvent<"pull_request">) {
     const octokit = await app.getInstallationOctokit(payload.installation!.id);
 
-    await octokit.rest.issues.createComment({
+    const { data, status } = await octokit.rest.issues.createComment({
         body: "Verifying pull request contents...",
         issue_number: payload.pull_request.number,
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
+    });
+
+    if (!(status >= 200 && status < 300)) {
+        return;
+    }
+
+    await octokit.rest.issues.updateComment({
+        body: "Done verifying.",
+        issue_number: payload.pull_request.number,
+        owner: payload.repository.owner.login,
+        repo: payload.repository.name,
+        comment_id: data.id,
     });
 }
