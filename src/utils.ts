@@ -25,7 +25,7 @@ export async function safeOctokitRequest<Method extends (...args: any[]) => any>
     ...params: Parameters<Method>
 ): Promise<Awaited<ReturnType<Method>>["data"]> {
     try {
-        const response = await method(params);
+        const response = await method(...params);
         return response.data;
     } catch (error) {
         if (error instanceof RequestError) {
