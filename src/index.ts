@@ -1,6 +1,7 @@
 import { EmitterWebhookEvent } from "@octokit/webhooks";
 import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
 import { App } from "octokit";
+import { safeOctokitRequest } from "./utils";
 
 const app = new App({
     appId: process.env.APP_ID!,
@@ -34,7 +35,7 @@ async function run({ payload }: EmitterWebhookEvent<"pull_request">) {
     const octokit = await app.getInstallationOctokit(payload.installation!.id);
 
     if (!payload.pull_request.merged) {
-        await octokit.rest.issues.createComment({
+        await safeOctokitRequest(octokit.rest.issues.createComment, {
             body: "Pull request was closed without merging.",
             issue_number: payload.pull_request.number,
             owner: payload.repository.owner.login,
@@ -44,23 +45,19 @@ async function run({ payload }: EmitterWebhookEvent<"pull_request">) {
         return;
     }
 
-    const { data, status } = await octokit.rest.issues.createComment({
+    const { id: commentId } = await safeOctokitRequest(octokit.rest.issues.createComment, {
         body: "Running `multi-gitter`...",
         issue_number: payload.pull_request.number,
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
     });
 
-    if (!(status >= 200 && status < 300)) {
-        return;
-    }
-
-    await octokit.rest.issues.updateComment({
+    await safeOctokitRequest(octokit.rest.issues.updateComment, {
         body: "Done running `multi-gitter`.",
         issue_number: payload.pull_request.number,
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
-        comment_id: data.id,
+        comment_id: commentId,
     });
 
     // check verification status
@@ -71,22 +68,18 @@ async function run({ payload }: EmitterWebhookEvent<"pull_request">) {
 async function verify({ payload }: EmitterWebhookEvent<"pull_request">) {
     const octokit = await app.getInstallationOctokit(payload.installation!.id);
 
-    const { data, status } = await octokit.rest.issues.createComment({
+    const { id: commentId } = await safeOctokitRequest(octokit.rest.issues.createComment, {
         body: "Verifying pull request contents...",
         issue_number: payload.pull_request.number,
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
     });
 
-    if (!(status >= 200 && status < 300)) {
-        return;
-    }
-
-    await octokit.rest.issues.updateComment({
+    await safeOctokitRequest(octokit.rest.issues.updateComment, {
         body: "Done verifying.",
         issue_number: payload.pull_request.number,
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
-        comment_id: data.id,
+        comment_id: commentId,
     });
 }
