@@ -5,7 +5,7 @@
         "module": "NodeNext",
         "outDir": "dist",
         "strict": true,
-        "target": "ES6"
+        "target": "ES6",
     },
-    "include": ["infrastructure", "src"]
+    "include": ["infrastructure", "src"],
 }
