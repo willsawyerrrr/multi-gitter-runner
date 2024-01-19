@@ -2,6 +2,8 @@
     "arrowParens": "always",
     "bracketSameLine": false,
     "bracketSpacing": true,
+    "importOrder": ["<THIRD_PARTY_MODULES>", "^[./]"],
+    "importOrderSeparation": true,
     "jsxSingleQuote": false,
     "overrides": [
         {
@@ -11,6 +13,7 @@
             }
         }
     ],
+    "plugins": ["@trivago/prettier-plugin-sort-imports"],
     "printWidth": 100,
     "quoteProps": "consistent",
     "semi": true,

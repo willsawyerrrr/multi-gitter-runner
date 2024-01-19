@@ -1,6 +1,7 @@
 import { EmitterWebhookEvent } from "@octokit/webhooks";
 import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
 import { App } from "octokit";
+
 import { safeOctokitRequest } from "./utils";
 
 const app = new App({
