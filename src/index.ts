@@ -1,8 +1,13 @@
+import { components } from "@octokit/openapi-types";
 import { EmitterWebhookEvent } from "@octokit/webhooks";
 import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
+import { SpawnSyncReturns, execSync } from "child_process";
+import { writeFileSync } from "fs";
 import { App } from "octokit";
 
-import { safeOctokitRequest } from "./utils";
+import { safeOctokitRequest, verifyFiles } from "./utils";
+
+const requiredFiles = ["script.sh", "config.yaml"];
 
 const app = new App({
     appId: process.env.APP_ID!,
@@ -75,6 +80,63 @@ async function verify({ payload }: EmitterWebhookEvent<"pull_request">) {
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
     });
+
+    const fileDiffs = await safeOctokitRequest(octokit.rest.pulls.listFiles, {
+        owner: payload.repository.owner.login,
+        repo: payload.repository.name,
+        pull_number: payload.pull_request.number,
+    });
+
+    const errors = await verifyFiles(
+        octokit.rest.repos.getContent,
+        payload,
+        fileDiffs,
+        requiredFiles
+    );
+
+    if (errors.length) {
+        errors.unshift("Failed to verify pull request contents:");
+        await safeOctokitRequest(octokit.rest.issues.updateComment, {
+            body: errors.join("\n"),
+            issue_number: payload.pull_request.number,
+            owner: payload.repository.owner.login,
+            repo: payload.repository.name,
+            comment_id: commentId,
+        });
+
+        return;
+    }
+
+    fileDiffs.forEach(async (fileDiff) => {
+        const { name, content } = (await safeOctokitRequest(octokit.rest.repos.getContent, {
+            owner: payload.repository.owner.login,
+            repo: payload.repository.name,
+            path: fileDiff.filename,
+            ref: payload.pull_request.head.sha,
+        })) as components["schemas"]["content-file"];
+
+        writeFileSync(`/tmp/${name}`, content, {
+            mode: name === "script.sh" ? 0o755 : 0o644,
+        });
+    });
+
+    let result: Buffer;
+    try {
+        result = execSync("multi-gitter run /tmp/script.sh --config /tmp/config.yaml --dry-run");
+    } catch (error) {
+        const stdout = (error as SpawnSyncReturns<Buffer>).stdout.toString();
+        const stderr = (error as SpawnSyncReturns<Buffer>).stderr.toString();
+
+        await safeOctokitRequest(octokit.rest.issues.updateComment, {
+            body: "Failed to run `multi-gitter`.",
+            issue_number: payload.pull_request.number,
+            owner: payload.repository.owner.login,
+            repo: payload.repository.name,
+            comment_id: commentId,
+        });
+
+        return;
+    }
 
     await safeOctokitRequest(octokit.rest.issues.updateComment, {
         body: "Done verifying.",
