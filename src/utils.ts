@@ -1,3 +1,4 @@
+import { RestEndpointMethods } from "@octokit/plugin-rest-endpoint-methods/dist-types/generated/method-types.js";
 import { RequestError } from "octokit";
 
 function camelCaseToSentenceCase(str: string) {
@@ -7,8 +8,11 @@ function camelCaseToSentenceCase(str: string) {
     );
 }
 
-// TODO: figure out how to type this to restrict the method to only
-//       those which are available on the `octokit.rest` instance
+type OctokitMethod = {
+    [Key in keyof RestEndpointMethods]: {
+        [Subkey in keyof RestEndpointMethods[Key]]: RestEndpointMethods[Key][Subkey];
+    }[keyof RestEndpointMethods[Key]];
+}[keyof RestEndpointMethods];
 
 /**
  * Calls an Octokit method, logging any errors that occur.
@@ -20,10 +24,9 @@ function camelCaseToSentenceCase(str: string) {
  *
  * @todo figure out how to type this to restrict the method to only those which are available on the `octokit.rest` instance
  */
-export async function safeOctokitRequest<Method extends (...args: any[]) => any>(
-    method: Method,
-    ...params: Parameters<Method>
-): Promise<Awaited<ReturnType<Method>>["data"]> {
+export async function safeOctokitRequest<
+    Method extends OctokitMethod & { (...params: Parameters<Method>): any },
+>(method: Method, ...params: Parameters<Method>): Promise<Awaited<ReturnType<Method>>["data"]> {
     try {
         const response = await method(...params);
         return response.data;
