@@ -58,8 +58,25 @@ async function run({ payload }: EmitterWebhookEvent<"pull_request">) {
         repo: payload.repository.name,
     });
 
+    let output: Buffer;
+    try {
+        output = execSync("multi-gitter run /tmp/script.sh --config /tmp/config.yaml");
+    } catch (error) {
+        const output = (error as SpawnSyncReturns<Buffer>).stdout.toString();
+
+        await safeOctokitRequest(octokit.rest.issues.updateComment, {
+            body: ["Failed to run `multi-gitter`:", "```", output, "```"].join("\n"),
+            issue_number: payload.pull_request.number,
+            owner: payload.repository.owner.login,
+            repo: payload.repository.name,
+            comment_id: commentId,
+        });
+
+        return;
+    }
+
     await safeOctokitRequest(octokit.rest.issues.updateComment, {
-        body: "Done running `multi-gitter`.",
+        body: ["Done running `multi-gitter`:", "```", output, "```"].join("\n"),
         issue_number: payload.pull_request.number,
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
@@ -120,15 +137,14 @@ async function verify({ payload }: EmitterWebhookEvent<"pull_request">) {
         });
     });
 
-    let result: Buffer;
+    let output: Buffer;
     try {
-        result = execSync("multi-gitter run /tmp/script.sh --config /tmp/config.yaml --dry-run");
+        output = execSync("multi-gitter run /tmp/script.sh --config /tmp/config.yaml");
     } catch (error) {
-        const stdout = (error as SpawnSyncReturns<Buffer>).stdout.toString();
-        const stderr = (error as SpawnSyncReturns<Buffer>).stderr.toString();
+        const output = (error as SpawnSyncReturns<Buffer>).stdout.toString();
 
         await safeOctokitRequest(octokit.rest.issues.updateComment, {
-            body: "Failed to run `multi-gitter`.",
+            body: ["Failed to run `multi-gitter`:", "```", output, "```"].join("\n"),
             issue_number: payload.pull_request.number,
             owner: payload.repository.owner.login,
             repo: payload.repository.name,
@@ -139,7 +155,7 @@ async function verify({ payload }: EmitterWebhookEvent<"pull_request">) {
     }
 
     await safeOctokitRequest(octokit.rest.issues.updateComment, {
-        body: "Done verifying.",
+        body: ["Done running `multi-gitter`:", "```", output, "```"].join("\n"),
         issue_number: payload.pull_request.number,
         owner: payload.repository.owner.login,
         repo: payload.repository.name,
