@@ -1,22 +1,11 @@
 version: 2
 updates:
   - package-ecosystem: "github-actions"
-    reviewers:
-      - "SituDevelopment/employees"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
 
   - package-ecosystem: "npm"
-    reviewers:
-      - "SituDevelopment/employees"
     directory: "/"
     schedule:
-      interval: "daily"
-
-  - package-ecosystem: "pip"
-    reviewers:
-      - "SituDevelopment/employees"
-    directory: "/"
-    schedule:
-      interval: "daily"
+      interval: "weekly"

@@ -8,4 +8,9 @@ permissions:
 
 jobs:
   labeller:
-    uses: SituDevelopment/.github/.github/workflows/labeller.yaml@main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/labeler@v5
+        with:
+          configuration-path: .github/labeller.yaml
+          sync-labels: true
