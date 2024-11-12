@@ -3,7 +3,7 @@
         "@octokit/webhooks-types": "^7.6.1",
         "@trivago/prettier-plugin-sort-imports": "^4.3.0",
         "@types/aws-lambda": "^8.10.145",
-        "@types/node": "^22.8.7",
+        "@types/node": "^22.9.0",
         "aws-cdk-lib": "^2.166.0",
         "prettier": "^3.3.3",
         "typescript": "^5.6.3"
