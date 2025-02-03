@@ -1,7 +1,7 @@
 {
     "devDependencies": {
         "@octokit/webhooks-types": "^7.6.1",
-        "@trivago/prettier-plugin-sort-imports": "^5.2.1",
+        "@trivago/prettier-plugin-sort-imports": "^5.2.2",
         "@types/aws-lambda": "^8.10.147",
         "@types/node": "^22.10.10",
         "aws-cdk-lib": "^2.177.0",
