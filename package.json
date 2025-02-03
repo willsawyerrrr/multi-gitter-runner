@@ -12,7 +12,7 @@
         "build": "tsc"
     },
     "dependencies": {
-        "@octokit/webhooks": "^12.1.2",
+        "@octokit/webhooks": "^13.5.0",
         "octokit": "^3.2.1"
     }
 }
